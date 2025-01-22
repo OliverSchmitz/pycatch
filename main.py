@@ -10,8 +10,7 @@ sys.path.append("./pcrasterModules/")
 import configuration as cfg
 
 # PCRaster itself
-import pcraster as pcr
-import pcraster.framework as pcrfw
+from lue.framework.pcraster_provider import pcr, pcrfw
 
 
 # from pcrasterModules
@@ -62,6 +61,9 @@ class CatchmentModel(pcrfw.DynamicModel, pcrfw.MonteCarloModel):
     # end required for reporting as numpy
 
   def initial(self):
+    ##
+    self.dem = pcr.scalar(cfg.dem)
+    ##
     self.timeStepDuration = cfg.timeStepDurationHoursFloatingPointValue
     self.initializeTime(cfg.startTimeYearValue, cfg.startTimeMonthValue, cfg.startTimeDayValue, self.timeStepDuration)
     self.createInstancesInitial()
@@ -78,7 +80,7 @@ class CatchmentModel(pcrfw.DynamicModel, pcrfw.MonteCarloModel):
 
     # precipitation
     # for calibration
-    rainfallFluxDeterm = pcr.timeinputscalar(cfg.rainfallFluxDetermTimeSeries, pcr.nominal(cfg.rainfallFluxDetermTimeSeriesAreas))
+    rainfallFluxDeterm = pcr.uniform(1) / 100 #pcr.timeinputscalar(cfg.rainfallFluxDetermTimeSeries, pcr.nominal(cfg.rainfallFluxDetermTimeSeriesAreas))
     # for the experiments
     rainfallFlux = rainfallFluxDeterm #generalfunctions.mapNormalRelativeError(rainfallFluxDeterm,0.25)
     self.d_exchangevariables.cumulativePrecipitation = \
@@ -133,19 +135,19 @@ class CatchmentModel(pcrfw.DynamicModel, pcrfw.MonteCarloModel):
     fWaterPotential = self.d_subsurfaceWaterOneLayer.getFWaterPotential()
 
     # potential evapotranspiration
-    airTemperatureDeterm = pcr.timeinputscalar(cfg.airTemperatureDetermString, self.clone)
+    airTemperatureDeterm = pcr.uniform(1) * 20   - 5 #pcr.timeinputscalar(cfg.airTemperatureDetermString, self.clone)
     airTemperature = airTemperatureDeterm #airTemperatureDeterm+mapnormal()
 
-    relativeHumidityDeterm = pcr.timeinputscalar(cfg.relativeHumidityDetermString, self.clone)
+    relativeHumidityDeterm = pcr.uniform(1)# pcr.timeinputscalar(cfg.relativeHumidityDetermString, self.clone)
     relativeHumidity = relativeHumidityDeterm #pcr.max(pcr.min(relativeHumidityDeterm+mapnormal()*0.1,pcr.scalar(1.0)),pcr.scalar(0))
 
-    incomingShortwaveRadiationFlatSurface = pcr.timeinputscalar(cfg.incomingShortwaveRadiationFlatSurfaceString, self.clone)
+    incomingShortwaveRadiationFlatSurface = pcr.uniform(1) * 800 # pcr.timeinputscalar(cfg.incomingShortwaveRadiationFlatSurfaceString, self.clone)
     # incomingShortwaveRadiationFlatSurface = pcr.max(pcr.scalar(0),
     #                              generalfunctions.mapNormalRelativeError(incomingShortwaveRadiationFlatSurfaceDeterm,0.25))
 
     incomingShortwaveRadiationAtSurface = incomingShortwaveRadiationFlatSurface * fractionReceived
 
-    windVelocityDeterm = pcr.timeinputscalar(cfg.windVelocityDetermString, self.clone)
+    windVelocityDeterm = pcr.uniform(1) # pcr.timeinputscalar(cfg.windVelocityDetermString, self.clone)
     windVelocity = windVelocityDeterm #generalfunctions.mapNormalRelativeError(windVelocityDeterm,0.25)
 
     elevationAboveSeaLevelOfMeteoStation = cfg.elevationAboveSeaLevelOfMeteoStationValue
@@ -598,29 +600,41 @@ class CatchmentModel(pcrfw.DynamicModel, pcrfw.MonteCarloModel):
     for filename in glob.glob(str(self.currentSampleNumber()) + '/stateVar/*/*'):
       os.remove(filename)
 
-if cfg.filtering:
-  import generalfunctions
-  myModel = CatchmentModel()
-  dynamicModel = pcrfw.DynamicFramework(myModel, cfg.numberOfTimeSteps)
-  mcModel = pcrfw.MonteCarloFramework(dynamicModel, cfg.nrOfSamples)
-  mcModel.setForkSamples(True, 10)
-  #pfModel = SequentialImportanceResamplingFramework(mcModel)
-  pfModel = pcrfw.ResidualResamplingFramework(mcModel)
-  filterTimestepsNoSelection = range(3750, cfg.numberOfTimeSteps + 1, 25)
-  periodsToExclude = [
-    [2617, 2976],
-    [3649, 3689],
-    [4173, 4416],
-    [4046, 4366],
-    [5281, 6075]
-    ]
-  filterTimesteps = generalfunctions.removePeriodsFromAListOfTimesteps(filterTimestepsNoSelection, periodsToExclude)
-  pfModel.setFilterTimesteps(filterTimesteps)
-  pfModel.run()
+# if cfg.filtering:
+#   import generalfunctions
+#   myModel = CatchmentModel()
+#   dynamicModel = pcrfw.DynamicFramework(myModel, cfg.numberOfTimeSteps)
+#   mcModel = pcrfw.MonteCarloFramework(dynamicModel, cfg.nrOfSamples)
+#   mcModel.setForkSamples(True, 10)
+#   #pfModel = SequentialImportanceResamplingFramework(mcModel)
+#   pfModel = pcrfw.ResidualResamplingFramework(mcModel)
+#   filterTimestepsNoSelection = range(3750, cfg.numberOfTimeSteps + 1, 25)
+#   periodsToExclude = [
+#     [2617, 2976],
+#     [3649, 3689],
+#     [4173, 4416],
+#     [4046, 4366],
+#     [5281, 6075]
+#     ]
+#   filterTimesteps = generalfunctions.removePeriodsFromAListOfTimesteps(filterTimestepsNoSelection, periodsToExclude)
+#   pfModel.setFilterTimesteps(filterTimesteps)
+#   pfModel.run()
+#
+# else:
+#   myModel = CatchmentModel()
+#   dynamicModel = pcrfw.DynamicFramework(myModel, cfg.numberOfTimeSteps)
+#   mcModel = pcrfw.MonteCarloFramework(dynamicModel, cfg.nrOfSamples)
+#   mcModel.setForkSamples(True, 10)
+#   mcModel.run()
 
-else:
-  myModel = CatchmentModel()
-  dynamicModel = pcrfw.DynamicFramework(myModel, cfg.numberOfTimeSteps)
-  mcModel = pcrfw.MonteCarloFramework(dynamicModel, cfg.nrOfSamples)
-  mcModel.setForkSamples(True, 10)
-  mcModel.run()
+
+@pcr.runtime_scope
+def main():
+    myModel = CatchmentModel()
+    dynamicModel = pcrfw.DynamicFramework(myModel, cfg.numberOfTimeSteps)
+    dynamicModel.run()
+
+
+if __name__ == '__main__':
+    sys.exit(main())
+

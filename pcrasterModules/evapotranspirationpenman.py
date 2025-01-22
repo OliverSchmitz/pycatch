@@ -1,4 +1,4 @@
-import pcraster as pcr
+from lue.framework.pcraster_provider import pcr
 import component
 
 # Notes:

@@ -1,5 +1,4 @@
-import pcraster as pcr
-import pcraster.framework as pcrfw
+from lue.framework.pcraster_provider import pcr, pcrfw
 import generalfunctions
 import component
 

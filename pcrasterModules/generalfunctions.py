@@ -1,5 +1,4 @@
-import pcraster as pcr
-import pcraster.framework as pcrfw
+from lue.framework.pcraster_provider import pcr, pcrfw
 import scipy.stats
 
 import numpy
@@ -44,9 +43,9 @@ def getCellValue(Map, Row, Column):
 def printErrorMessageIfACellContainsTrue(booleanMap, errorMessage):
   scalarMap = pcr.cover(pcr.scalar(booleanMap), 0)
   cellContainsTrueMap = pcr.boolean(pcr.mapmaximum(scalarMap))
-  cellContainsTrue = getCellValue(cellContainsTrueMap, 1, 1)
-  if cellContainsTrue > 0.5:
-    print(errorMessage)
+  # cellContainsTrue = getCellValue(cellContainsTrueMap, 1, 1)
+  # if cellContainsTrue > 0.5:
+  #   print(errorMessage)
 
 def getCellValueAtBooleanLocation(location, map):
   # map can be any type, return value always float
