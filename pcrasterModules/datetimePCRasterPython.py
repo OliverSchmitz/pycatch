@@ -9,9 +9,9 @@ class DatetimePCRasterPython:
 
     Arguments:
     startTimeDatetimeFormat -- real time at timestep 0, given in the format of the Python datetime module
-                               e.g., 26 february, 2001 is datetime(year=2001, month=2, day=26) 
+                               e.g., 26 february, 2001 is datetime(year=2001, month=2, day=26)
     timeStepDurationDatetimeFormat -- real duration of a timestep, e.g. one hour is timedelta(hours=1)
-    
+
     """
     self.startTimeDatetimeFormat=startTimeDatetimeFormat
     self.currentTimeDatetimeFormat=self.startTimeDatetimeFormat
@@ -36,4 +36,4 @@ class DatetimePCRasterPython:
   #   return "%s %s %s ..." % (self.rainFlux, 'rainfall flux', 'm/h', row, column)
 
   def printit(self):
-    print(self.currentTimeDatetimeFormat)
+    pass # print(self.currentTimeDatetimeFormat)

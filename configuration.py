@@ -71,7 +71,7 @@ if with_shading is False:
   #fractionReceivedValue = 1.0
   #fractionReceivedFlatSurfaceValue = 1.0
   fractionReceivedValue = 0.0
-  fractionReceivedFlatSurfaceValue = 0.0 
+  fractionReceivedFlatSurfaceValue = 0.0
 
 ################
 # model inputs #
@@ -98,7 +98,7 @@ locations = str(pathlib.Path(inputFolder, "mergeOutFlowsNominal.map"))
 # timeseries inputs #
 #####################
 
-# meteorology 
+# meteorology
 # same value across area (timseries has two columns) except rainfall (two areas, three columns)
 rainfallFluxDetermTimeSeries = str(pathlib.Path(inputFolder, "rainfallFluxTwoCatchsJulAugSep0506.tss"))
 airTemperatureDetermString = str(pathlib.Path(inputFolder, "airTemperatureArnaJulAugSep0506.tss"))
@@ -139,7 +139,7 @@ if mapsAsInput:
   # location of the stream, used to adjust regolith thickness there
   streamValue = str(pathlib.Path(inputFolder, "mergeStream.map"))
 
-  # subsurface water 
+  # subsurface water
   saturatedConductivityMetrePerDayValue = 37.0
   limitingPointFractionValue = str(pathlib.Path(inputFolder, "mergeLimitingPointFractionFS.map"))
   mergeWiltingPointFractionFSValue = str(pathlib.Path(inputFolder, "mergeWiltingPointFractionFS.map"))
@@ -153,7 +153,7 @@ if mapsAsInput:
   vegetationHeightValue = str(pathlib.Path(inputFolder, "mergeVegHeightFS.map"))
 
 else:
-  
+
   # forest (0) or no forest (1), only used when swapCatchments is True
   forestNoForest = 0
   areas = 0
@@ -178,7 +178,7 @@ else:
   # regolith geometry
   regolithThicknessHomogeneousValue = 0.5
 
-  # subsurface water 
+  # subsurface water
   saturatedConductivityMetrePerDayValue = 37.0
   limitingPointFractionValue = 0.276293
   mergeWiltingPointFractionFSValue = 0.1
@@ -231,10 +231,10 @@ elif setOfVariablesToReport == 'filtering':
   interception_report_rasters = []  # reports of totals (Vot) only make sense if calculateUpstreamTotals is True
   evapotrans_report_rasters = []
   infiltration_report_rasters = []
-  runoff_report_rasters = ["Rq"]
+  runoff_report_rasters = []
   #shading_report_rasters = []
   shading_report_rasters = ["Mfs", "Msc", "Msh"]
-  subsurface_report_rasters = ["Gs"]   # reports of totals (accuflux) only make sense if calculateUpstreamTotals is True
+  subsurface_report_rasters = []   # reports of totals (accuflux) only make sense if calculateUpstreamTotals is True
   surfacestore_report_rasters = []
   #randomparameters_report_rasters = ["RPic", "RPks", "RPrt", "RPsc", "RPmm"]
   randomparameters_report_rasters = []

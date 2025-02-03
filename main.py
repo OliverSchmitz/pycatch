@@ -202,6 +202,8 @@ class CatchmentModel(pcrfw.DynamicModel, pcrfw.MonteCarloModel):
 
     #self.checkBudgets(self.currentSampleNumber(), self.currentTimeStep())
 
+    return self.d_exchangevariables.upwardSeepageFlux.future()
+
   def postmcloop(self):
     # required for reporting as numpy
     self.timeStepDuration = cfg.timeStepDurationHoursFloatingPointValue # needed in case of forking, else the instances have been deleted
@@ -632,7 +634,7 @@ class CatchmentModel(pcrfw.DynamicModel, pcrfw.MonteCarloModel):
 def main():
     myModel = CatchmentModel()
     dynamicModel = pcrfw.DynamicFramework(myModel, cfg.numberOfTimeSteps)
-    dynamicModel.run()
+    dynamicModel.run(rate_limit=1)
 
 
 if __name__ == '__main__':
