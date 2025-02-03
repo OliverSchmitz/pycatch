@@ -11,6 +11,7 @@ import configuration as cfg
 
 # PCRaster itself
 from lue.framework.pcraster_provider import pcr, pcrfw
+import lue.framework as lfr
 
 
 # from pcrasterModules
@@ -38,12 +39,31 @@ import exchangevariables
 
 
 class CatchmentModel(pcrfw.DynamicModel, pcrfw.MonteCarloModel):
-  def __init__(self):
+  def __init__(self,
+    count: int,
+    nr_workers: int,
+    array_shape: tuple[int, int],
+    partition_shape: tuple[int, int],
+    result_pathname: str,
+    centre: tuple[int, int]
+    ):
     pcrfw.DynamicModel.__init__(self)
     pcrfw.MonteCarloModel.__init__(self)
     pcr.setclone(cfg.cloneString)
     if cfg.filtering:
       pcrfw.ParticleFilterModel.__init__(self)
+
+    self.count = count
+    self.nr_workers = nr_workers
+    self.array_shape = array_shape
+    self.partition_shape = partition_shape
+    self.result_pathname = result_pathname
+
+    hyperslab_shape = array_shape
+    self.hyperslab = lfr.Hyperslab(center=centre, shape=hyperslab_shape)
+
+    pcr.configuration.partition_shape = partition_shape
+
 
   def premcloop(self):
     self.clone = pcr.boolean(cfg.cloneString)
@@ -62,7 +82,8 @@ class CatchmentModel(pcrfw.DynamicModel, pcrfw.MonteCarloModel):
 
   def initial(self):
     ##
-    self.dem = pcr.scalar(cfg.dem)
+    #self.dem = pcr.scalar(cfg.dem)
+    self.dem = lfr.from_gdal(cfg.dem, partition_shape=self.partition_shape)
     ##
     self.timeStepDuration = cfg.timeStepDurationHoursFloatingPointValue
     self.initializeTime(cfg.startTimeYearValue, cfg.startTimeMonthValue, cfg.startTimeDayValue, self.timeStepDuration)
@@ -266,7 +287,8 @@ class CatchmentModel(pcrfw.DynamicModel, pcrfw.MonteCarloModel):
     # interception #
     ################
 
-    self.ldd = cfg.lddMap
+    # self.ldd = cfg.lddMap
+    self.ldd = lfr.from_gdal(cfg.lddMap, partition_shape=self.partition_shape)
 
     initialInterceptionStore = pcr.scalar(0.000001)
     leafAreaIndex = pcr.scalar(cfg.leafAreaIndexValue)
@@ -631,12 +653,29 @@ class CatchmentModel(pcrfw.DynamicModel, pcrfw.MonteCarloModel):
 
 
 @pcr.runtime_scope
-def main():
-    myModel = CatchmentModel()
+def main(
+    count: int,
+    nr_workers: int,
+    array_shape: tuple[int, int],
+    partition_shape: tuple[int, int],
+    result_pathname: str,
+    centre: tuple[int, int]
+    ):
+
+    myModel = CatchmentModel(count, nr_workers, array_shape, partition_shape, result_pathname, centre)
     dynamicModel = pcrfw.DynamicFramework(myModel, cfg.numberOfTimeSteps)
+
     dynamicModel.run(rate_limit=1)
 
 
 if __name__ == '__main__':
-    sys.exit(main())
+    count = 1
+    nr_workers = 8
+    array_shape =  (11100, 13532)
+    partition_shape = (1000, 1000)
+    result_pathname = "py_out"
+
+    centre = (array_shape[0] // 2, array_shape[1] // 2)
+
+    sys.exit(main(count, nr_workers, array_shape, partition_shape, result_pathname, centre))
 
