@@ -69,6 +69,7 @@ class CatchmentModel(pcrfw.DynamicModel, pcrfw.MonteCarloModel):
     hyperslab_shape = array_shape
     hyperslab = lfr.Hyperslab(center=centre, shape=hyperslab_shape)
 
+    self.clone = lfr.from_gdal(cfg.cloneString, partition_shape=self.partition_shape, hyperslab=hyperslab)
     self.dem = lfr.from_gdal(cfg.dem, partition_shape=self.partition_shape, hyperslab=hyperslab)
     self.ldd = lfr.from_gdal(cfg.lddMap, partition_shape=self.partition_shape, hyperslab=hyperslab)
     lfr.wait(self.ldd)
@@ -108,7 +109,7 @@ class CatchmentModel(pcrfw.DynamicModel, pcrfw.MonteCarloModel):
 
     # precipitation
     # for calibration
-    rainfallFluxDeterm = pcr.uniform(1) / 100 #pcr.timeinputscalar(cfg.rainfallFluxDetermTimeSeries, pcr.nominal(cfg.rainfallFluxDetermTimeSeriesAreas))
+    rainfallFluxDeterm = pcr.timeinputscalar(cfg.rainfallFluxDetermTimeSeries, pcr.nominal(pcr.spatial(cfg.rainfallFluxDetermTimeSeriesAreas)), self.currentTimeStep())
     # for the experiments
     rainfallFlux = rainfallFluxDeterm #generalfunctions.mapNormalRelativeError(rainfallFluxDeterm,0.25)
     self.d_exchangevariables.cumulativePrecipitation = \
@@ -163,19 +164,19 @@ class CatchmentModel(pcrfw.DynamicModel, pcrfw.MonteCarloModel):
     fWaterPotential = self.d_subsurfaceWaterOneLayer.getFWaterPotential()
 
     # potential evapotranspiration
-    airTemperatureDeterm = pcr.uniform(1) * 20   - 5 #pcr.timeinputscalar(cfg.airTemperatureDetermString, self.clone)
+    airTemperatureDeterm = pcr.timeinputscalar(cfg.airTemperatureDetermString, self.clone, self.currentTimeStep())
     airTemperature = airTemperatureDeterm #airTemperatureDeterm+mapnormal()
 
-    relativeHumidityDeterm = pcr.uniform(1)# pcr.timeinputscalar(cfg.relativeHumidityDetermString, self.clone)
+    relativeHumidityDeterm = pcr.timeinputscalar(cfg.relativeHumidityDetermString, self.clone, self.currentTimeStep())
     relativeHumidity = relativeHumidityDeterm #pcr.max(pcr.min(relativeHumidityDeterm+mapnormal()*0.1,pcr.scalar(1.0)),pcr.scalar(0))
 
-    incomingShortwaveRadiationFlatSurface = pcr.uniform(1) * 800 # pcr.timeinputscalar(cfg.incomingShortwaveRadiationFlatSurfaceString, self.clone)
+    incomingShortwaveRadiationFlatSurface = pcr.timeinputscalar(cfg.incomingShortwaveRadiationFlatSurfaceString, self.clone, self.currentTimeStep())
     # incomingShortwaveRadiationFlatSurface = pcr.max(pcr.scalar(0),
     #                              generalfunctions.mapNormalRelativeError(incomingShortwaveRadiationFlatSurfaceDeterm,0.25))
 
     incomingShortwaveRadiationAtSurface = incomingShortwaveRadiationFlatSurface * fractionReceived
 
-    windVelocityDeterm = pcr.uniform(1) # pcr.timeinputscalar(cfg.windVelocityDetermString, self.clone)
+    windVelocityDeterm = pcr.timeinputscalar(cfg.windVelocityDetermString, self.clone, self.currentTimeStep())
     windVelocity = windVelocityDeterm #generalfunctions.mapNormalRelativeError(windVelocityDeterm,0.25)
 
     elevationAboveSeaLevelOfMeteoStation = cfg.elevationAboveSeaLevelOfMeteoStationValue
