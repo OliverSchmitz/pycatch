@@ -1,4 +1,7 @@
+#!/usr/bin/env python
+
 # general
+import argparse
 import datetime
 import glob
 import sys
@@ -12,7 +15,7 @@ import configuration as cfg
 # PCRaster itself
 from lue.framework.pcraster_provider import pcr, pcrfw
 import lue.framework as lfr
-
+import lue.qa.scalability.instrument as lqi
 
 # from pcrasterModules
 import datetimePCRasterPython
@@ -59,11 +62,16 @@ class CatchmentModel(pcrfw.DynamicModel, pcrfw.MonteCarloModel):
     self.partition_shape = partition_shape
     self.result_pathname = result_pathname
 
-    hyperslab_shape = array_shape
-    self.hyperslab = lfr.Hyperslab(center=centre, shape=hyperslab_shape)
-
+    # overrule whatever was used with setclone, we want this:
     pcr.configuration.partition_shape = partition_shape
+    pcr.configuration.array_shape = array_shape
 
+    hyperslab_shape = array_shape
+    hyperslab = lfr.Hyperslab(center=centre, shape=hyperslab_shape)
+
+    self.dem = lfr.from_gdal(cfg.dem, partition_shape=self.partition_shape, hyperslab=hyperslab)
+    self.ldd = lfr.from_gdal(cfg.lddMap, partition_shape=self.partition_shape, hyperslab=hyperslab)
+    lfr.wait(self.ldd)
 
   def premcloop(self):
     self.clone = pcr.boolean(cfg.cloneString)
@@ -83,7 +91,6 @@ class CatchmentModel(pcrfw.DynamicModel, pcrfw.MonteCarloModel):
   def initial(self):
     ##
     #self.dem = pcr.scalar(cfg.dem)
-    self.dem = lfr.from_gdal(cfg.dem, partition_shape=self.partition_shape)
     ##
     self.timeStepDuration = cfg.timeStepDurationHoursFloatingPointValue
     self.initializeTime(cfg.startTimeYearValue, cfg.startTimeMonthValue, cfg.startTimeDayValue, self.timeStepDuration)
@@ -223,7 +230,12 @@ class CatchmentModel(pcrfw.DynamicModel, pcrfw.MonteCarloModel):
 
     #self.checkBudgets(self.currentSampleNumber(), self.currentTimeStep())
 
+
+    if self.currentTimeStep() == cfg.numberOfTimeSteps: # self.nrTimeSteps():
+      lfr.wait(self.d_exchangevariables.upwardSeepageFlux)
+
     return self.d_exchangevariables.upwardSeepageFlux.future()
+
 
   def postmcloop(self):
     # required for reporting as numpy
@@ -288,7 +300,6 @@ class CatchmentModel(pcrfw.DynamicModel, pcrfw.MonteCarloModel):
     ################
 
     # self.ldd = cfg.lddMap
-    self.ldd = lfr.from_gdal(cfg.lddMap, partition_shape=self.partition_shape)
 
     initialInterceptionStore = pcr.scalar(0.000001)
     leafAreaIndex = pcr.scalar(cfg.leafAreaIndexValue)
@@ -362,7 +373,7 @@ class CatchmentModel(pcrfw.DynamicModel, pcrfw.MonteCarloModel):
     if cfg.mapsAsInput:
       stream = pcr.boolean(cfg.streamValue)
     else:
-      upstreamArea = pcr.accuflux(cfg.lddMap,pcr.cellarea())
+      upstreamArea = pcr.accuflux(self.ldd, pcr.cellarea())
       stream = upstreamArea > 200000.0
 
     theSlope = pcr.slope(self.dem)
@@ -664,16 +675,44 @@ def main(
 
     myModel = CatchmentModel(count, nr_workers, array_shape, partition_shape, result_pathname, centre)
     dynamicModel = pcrfw.DynamicFramework(myModel, cfg.numberOfTimeSteps)
+    # lfr waits at init()...
 
-    dynamicModel.run(rate_limit=1)
+
+    experiment = lqi.ArrayExperiment(nr_workers, array_shape, partition_shape)
+    experiment.start()
+
+    for _ in range(count):
+        run = lqi.Run()
+        run.start()
+
+        dynamicModel.run(rate_limit=2)
+
+        # lfr.wait(generation) # dynamic() waits instead at last timestep...
+        run.stop()
+        experiment.add(run)
+
+    experiment.stop()
+    lqi.save_results(experiment, result_pathname)
+
 
 
 if __name__ == '__main__':
-    count = 1
-    nr_workers = 8
-    array_shape =  (11100, 13532)
-    partition_shape = (1000, 1000)
-    result_pathname = "py_out"
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--lue:count')
+    parser.add_argument('--lue:nr_workers')
+    parser.add_argument('--lue:array_shape')
+    parser.add_argument('--lue:partition_shape')
+    parser.add_argument('--lue:result')
+
+    args, unknown = parser.parse_known_args()
+
+    count = int(vars(args)["lue:count"])
+    nr_workers = int(vars(args)["lue:nr_workers"])
+    e1, e2 = vars(args)["lue:array_shape"].replace("[","").replace("]","").split(",")
+    array_shape = (int(e1),int(e2))
+    s1, s2 = vars(args)["lue:partition_shape"].replace("[","").replace("]","").split(",")
+    partition_shape = (int(s1),int(s2))
+    result_pathname = vars(args)["lue:result"]
 
     centre = (array_shape[0] // 2, array_shape[1] // 2)
 
