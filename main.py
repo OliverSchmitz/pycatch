@@ -62,17 +62,24 @@ class CatchmentModel(pcrfw.DynamicModel, pcrfw.MonteCarloModel):
     self.partition_shape = partition_shape
     self.result_pathname = result_pathname
 
-    # overrule whatever was used with setclone, we want this:
-    pcr.configuration.partition_shape = partition_shape
-    pcr.configuration.array_shape = array_shape
+    if pcr.provider_name == "lue":
 
-    hyperslab_shape = array_shape
-    hyperslab = lfr.Hyperslab(center=centre, shape=hyperslab_shape)
+      # overrule whatever was used with setclone, we want this:
+      pcr.configuration.partition_shape = partition_shape
+      pcr.configuration.array_shape = array_shape
 
-    self.clone = lfr.from_gdal(cfg.cloneString, partition_shape=self.partition_shape, hyperslab=hyperslab)
-    self.dem = lfr.from_gdal(cfg.dem, partition_shape=self.partition_shape, hyperslab=hyperslab)
-    self.ldd = lfr.from_gdal(cfg.lddMap, partition_shape=self.partition_shape, hyperslab=hyperslab)
-    lfr.wait(self.ldd)
+      hyperslab_shape = array_shape
+      hyperslab = lfr.Hyperslab(center=centre, shape=hyperslab_shape)
+
+      self.clone = lfr.from_gdal(cfg.cloneString, partition_shape=self.partition_shape, hyperslab=hyperslab)
+      self.dem = lfr.from_gdal(cfg.dem, partition_shape=self.partition_shape, hyperslab=hyperslab)
+      self.ldd = lfr.from_gdal(cfg.lddMap, partition_shape=self.partition_shape, hyperslab=hyperslab)
+      self.ldd.future().get()
+    else:
+      self.clone = pcr.readmap(cfg.cloneString)
+      self.dem = pcr.readmap(cfg.dem)
+      self.ldd = pcr.readmap(cfg.lddMap)
+
 
   def premcloop(self):
     self.clone = pcr.boolean(cfg.cloneString)
@@ -109,7 +116,10 @@ class CatchmentModel(pcrfw.DynamicModel, pcrfw.MonteCarloModel):
 
     # precipitation
     # for calibration
-    rainfallFluxDeterm = pcr.timeinputscalar(cfg.rainfallFluxDetermTimeSeries, pcr.nominal(pcr.spatial(cfg.rainfallFluxDetermTimeSeriesAreas)), self.currentTimeStep())
+    if pcr.provider_name == "lue":
+        rainfallFluxDeterm = pcr.timeinputscalar(cfg.rainfallFluxDetermTimeSeries, pcr.nominal(pcr.spatial(cfg.rainfallFluxDetermTimeSeriesAreas)), self.currentTimeStep())
+    else:
+        rainfallFluxDeterm = pcr.timeinputscalar(cfg.rainfallFluxDetermTimeSeries, pcr.nominal(cfg.rainfallFluxDetermTimeSeriesAreas))
     # for the experiments
     rainfallFlux = rainfallFluxDeterm #generalfunctions.mapNormalRelativeError(rainfallFluxDeterm,0.25)
     self.d_exchangevariables.cumulativePrecipitation = \
@@ -164,19 +174,30 @@ class CatchmentModel(pcrfw.DynamicModel, pcrfw.MonteCarloModel):
     fWaterPotential = self.d_subsurfaceWaterOneLayer.getFWaterPotential()
 
     # potential evapotranspiration
-    airTemperatureDeterm = pcr.timeinputscalar(cfg.airTemperatureDetermString, self.clone, self.currentTimeStep())
+    if pcr.provider_name == "lue":
+        airTemperatureDeterm = pcr.timeinputscalar(cfg.airTemperatureDetermString, self.clone, self.currentTimeStep())
+    else:
+        airTemperatureDeterm = pcr.timeinputscalar(cfg.airTemperatureDetermString, self.clone)
     airTemperature = airTemperatureDeterm #airTemperatureDeterm+mapnormal()
-
-    relativeHumidityDeterm = pcr.timeinputscalar(cfg.relativeHumidityDetermString, self.clone, self.currentTimeStep())
+    if pcr.provider_name == "lue":
+        relativeHumidityDeterm = pcr.timeinputscalar(cfg.relativeHumidityDetermString, self.clone, self.currentTimeStep())
+    else:
+        relativeHumidityDeterm = pcr.timeinputscalar(cfg.relativeHumidityDetermString, self.clone)
     relativeHumidity = relativeHumidityDeterm #pcr.max(pcr.min(relativeHumidityDeterm+mapnormal()*0.1,pcr.scalar(1.0)),pcr.scalar(0))
+    if pcr.provider_name == "lue":
+        incomingShortwaveRadiationFlatSurface = pcr.timeinputscalar(cfg.incomingShortwaveRadiationFlatSurfaceString, self.clone, self.currentTimeStep())
+    else:
+        incomingShortwaveRadiationFlatSurface = pcr.timeinputscalar(cfg.incomingShortwaveRadiationFlatSurfaceString, self.clone)
 
-    incomingShortwaveRadiationFlatSurface = pcr.timeinputscalar(cfg.incomingShortwaveRadiationFlatSurfaceString, self.clone, self.currentTimeStep())
     # incomingShortwaveRadiationFlatSurface = pcr.max(pcr.scalar(0),
     #                              generalfunctions.mapNormalRelativeError(incomingShortwaveRadiationFlatSurfaceDeterm,0.25))
 
     incomingShortwaveRadiationAtSurface = incomingShortwaveRadiationFlatSurface * fractionReceived
 
-    windVelocityDeterm = pcr.timeinputscalar(cfg.windVelocityDetermString, self.clone, self.currentTimeStep())
+    if pcr.provider_name == "lue":
+        windVelocityDeterm = pcr.timeinputscalar(cfg.windVelocityDetermString, self.clone, self.currentTimeStep())
+    else:
+        windVelocityDeterm = pcr.timeinputscalar(cfg.windVelocityDetermString, self.clone)
     windVelocity = windVelocityDeterm #generalfunctions.mapNormalRelativeError(windVelocityDeterm,0.25)
 
     elevationAboveSeaLevelOfMeteoStation = cfg.elevationAboveSeaLevelOfMeteoStationValue
@@ -231,11 +252,11 @@ class CatchmentModel(pcrfw.DynamicModel, pcrfw.MonteCarloModel):
 
     #self.checkBudgets(self.currentSampleNumber(), self.currentTimeStep())
 
+    if pcr.provider_name == "lue":
+        if self.currentTimeStep() == cfg.numberOfTimeSteps: # self.nrTimeSteps():
+            self.d_exchangevariables.upwardSeepageFlux.future().get()
 
-    if self.currentTimeStep() == cfg.numberOfTimeSteps: # self.nrTimeSteps():
-      lfr.wait(self.d_exchangevariables.upwardSeepageFlux)
-
-    return self.d_exchangevariables.upwardSeepageFlux.future()
+        return self.d_exchangevariables.upwardSeepageFlux.future()
 
 
   def postmcloop(self):
@@ -686,7 +707,10 @@ def main(
         run = lqi.Run()
         run.start()
 
-        dynamicModel.run(rate_limit=2)
+        if pcr.provider_name == "lue":
+            dynamicModel.run(rate_limit=2)
+        else:
+            dynamicModel.run()
 
         # lfr.wait(generation) # dynamic() waits instead at last timestep...
         run.stop()
