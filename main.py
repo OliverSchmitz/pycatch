@@ -175,19 +175,19 @@ class CatchmentModel(pcrfw.DynamicModel, pcrfw.MonteCarloModel):
 
     # potential evapotranspiration
     if pcr.provider_name == "lue":
-        airTemperatureDeterm = pcr.timeinputscalar(cfg.airTemperatureDetermString, self.clone, self.currentTimeStep())
+        airTemperatureDeterm = pcr.timeinputscalar(cfg.airTemperatureDetermString, cfg.airTemperatureDetermTimeSeriesAreas, self.currentTimeStep())
     else:
-        airTemperatureDeterm = pcr.timeinputscalar(cfg.airTemperatureDetermString, self.clone)
+        airTemperatureDeterm = pcr.timeinputscalar(cfg.airTemperatureDetermString, cfg.airTemperatureDetermTimeSeriesAreas)
     airTemperature = airTemperatureDeterm #airTemperatureDeterm+mapnormal()
     if pcr.provider_name == "lue":
-        relativeHumidityDeterm = pcr.timeinputscalar(cfg.relativeHumidityDetermString, self.clone, self.currentTimeStep())
+        relativeHumidityDeterm = pcr.timeinputscalar(cfg.relativeHumidityDetermString, cfg.relativeHumidityDetermTimeSeriesAreas, self.currentTimeStep())
     else:
-        relativeHumidityDeterm = pcr.timeinputscalar(cfg.relativeHumidityDetermString, self.clone)
+        relativeHumidityDeterm = pcr.timeinputscalar(cfg.relativeHumidityDetermString, cfg.relativeHumidityDetermTimeSeriesAreas)
     relativeHumidity = relativeHumidityDeterm #pcr.max(pcr.min(relativeHumidityDeterm+mapnormal()*0.1,pcr.scalar(1.0)),pcr.scalar(0))
     if pcr.provider_name == "lue":
-        incomingShortwaveRadiationFlatSurface = pcr.timeinputscalar(cfg.incomingShortwaveRadiationFlatSurfaceString, self.clone, self.currentTimeStep())
+        incomingShortwaveRadiationFlatSurface = pcr.timeinputscalar(cfg.incomingShortwaveRadiationFlatSurfaceString, cfg.incomingShortwaveRadiationFlatSurfaceTimeSeriesAreas, self.currentTimeStep())
     else:
-        incomingShortwaveRadiationFlatSurface = pcr.timeinputscalar(cfg.incomingShortwaveRadiationFlatSurfaceString, self.clone)
+        incomingShortwaveRadiationFlatSurface = pcr.timeinputscalar(cfg.incomingShortwaveRadiationFlatSurfaceString, cfg.incomingShortwaveRadiationFlatSurfaceTimeSeriesAreas)
 
     # incomingShortwaveRadiationFlatSurface = pcr.max(pcr.scalar(0),
     #                              generalfunctions.mapNormalRelativeError(incomingShortwaveRadiationFlatSurfaceDeterm,0.25))
@@ -195,9 +195,9 @@ class CatchmentModel(pcrfw.DynamicModel, pcrfw.MonteCarloModel):
     incomingShortwaveRadiationAtSurface = incomingShortwaveRadiationFlatSurface * fractionReceived
 
     if pcr.provider_name == "lue":
-        windVelocityDeterm = pcr.timeinputscalar(cfg.windVelocityDetermString, self.clone, self.currentTimeStep())
+        windVelocityDeterm = pcr.timeinputscalar(cfg.windVelocityDetermString, cfg.windVelocityDetermTimeSeriesAreas, self.currentTimeStep())
     else:
-        windVelocityDeterm = pcr.timeinputscalar(cfg.windVelocityDetermString, self.clone)
+        windVelocityDeterm = pcr.timeinputscalar(cfg.windVelocityDetermString, cfg.windVelocityDetermTimeSeriesAreas)
     windVelocity = windVelocityDeterm #generalfunctions.mapNormalRelativeError(windVelocityDeterm,0.25)
 
     elevationAboveSeaLevelOfMeteoStation = cfg.elevationAboveSeaLevelOfMeteoStationValue

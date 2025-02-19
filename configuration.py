@@ -1,7 +1,7 @@
 import pathlib
 
 # define number of hourly timesteps to run
-numberOfTimeSteps = 10968
+numberOfTimeSteps = 10 #968
 
 # folder with input files (maps, timeseries)
 inputFolder = "inputs"
@@ -82,16 +82,16 @@ if with_shading is False:
 #########################
 
 # set clone
-cloneString = str(pathlib.Path(inputFolder, "mergeClone.map"))
+cloneString = str(pathlib.Path(inputFolder, "dem.tiff"))
 
 # digital elevation model (m)
-dem = str(pathlib.Path(inputFolder, "mergeDem.map"))
+dem = str(pathlib.Path(inputFolder, "dem.tiff"))
 
 # ldd map
-lddMap = str(pathlib.Path(inputFolder, "mergeldd.map"))
+lddMap = str(pathlib.Path(inputFolder, "ldd.tiff"))
 
 # report locations, i.e. outflow points, for instance, at the outlet
-locations = str(pathlib.Path(inputFolder, "mergeOutFlowsNominal.map"))
+locations = 0 #str(pathlib.Path(inputFolder, "mergeOutFlowsNominal.map"))
 
 
 #####################
@@ -119,6 +119,10 @@ if mapsAsInput:
   # meteorology
   # areas linked to rainfallFluxDetermTimeSeries (area code 1 and 2)
   rainfallFluxDetermTimeSeriesAreas = str(pathlib.Path(inputFolder, "mergeArnasSansaNominal.map"))
+  airTemperatureDetermTimeSeriesAreas = 1
+  relativeHumidityDetermTimeSeriesAreas = airTemperatureDetermTimeSeriesAreas
+  incomingShortwaveRadiationFlatSurfaceTimeSeriesAreas = airTemperatureDetermTimeSeriesAreas
+  windVelocityDetermTimeSeriesAreas = airTemperatureDetermTimeSeriesAreas
   elevationAboveSeaLevelOfMeteoStationValue = 900.0
 
   # interception
@@ -161,6 +165,10 @@ else:
   # meteorology
   # areas linked to rainfallFluxDetermTimeSeries (area code 1 and 2)
   rainfallFluxDetermTimeSeriesAreas = 1
+  airTemperatureDetermTimeSeriesAreas = 1
+  relativeHumidityDetermTimeSeriesAreas = 1
+  incomingShortwaveRadiationFlatSurfaceTimeSeriesAreas = 1
+  windVelocityDetermTimeSeriesAreas = 1
   elevationAboveSeaLevelOfMeteoStationValue = 900.0
 
   # interception
